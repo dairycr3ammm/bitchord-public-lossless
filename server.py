@@ -57,19 +57,33 @@ def decode_track(track_id):
 def fetch_item(identifier):
     return http_json(IA_METADATA + quote(identifier, safe=""))
 
+
 def flac_files(metadata):
     candidates = []
     for item in metadata.get("files", []):
-        name = str(item.get("name", ""))
-        fmt = str(item.get("format", "")).lower()
-        if name.lower().endswith(".flac") or "flac" in fmt:
-            if name and not name.endswith("/"):
-                candidates.append(item)
-    # Prefer files with explicit higher sample-rate/bit-depth metadata where present.
+        name = str(item.get("name", "")).strip()
+
+        # Only accept actual FLAC files.
+        if name.lower().endswith(".flac"):
+            candidates.append(item)
+
     def rank(item):
-        sample_rate = parse_int(item.get("sample_rate") or item.get("samplerate") or item.get("sampleRate"))
-        bit_depth = parse_int(item.get("bit_depth") or item.get("bitdepth") or item.get("bitDepth"))
-        return (sample_rate or 0, bit_depth or 0, parse_int(item.get("size")) or 0)
+        sample_rate = parse_int(
+            item.get("sample_rate")
+            or item.get("samplerate")
+            or item.get("sampleRate")
+        )
+        bit_depth = parse_int(
+            item.get("bit_depth")
+            or item.get("bitdepth")
+            or item.get("bitDepth")
+        )
+        return (
+            sample_rate or 0,
+            bit_depth or 0,
+            parse_int(item.get("size")) or 0
+        )
+
     return sorted(candidates, key=rank, reverse=True)
 
 def parse_int(value):
