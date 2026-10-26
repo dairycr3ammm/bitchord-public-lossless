@@ -158,6 +158,14 @@ def manifest():
         ]
     })
 
+def track_title_from_filename(filename):
+    name = filename.rsplit("/", 1)[-1]
+    name = name.rsplit(".", 1)[0]
+    name = re.sub(r"(?i)^onclassical_demo_", "", name)
+    name = name.replace("_", " ").replace("-", " ")
+    name = re.sub(r"\s+", " ", name).strip()
+    return name.title() if name else "Unknown track"
+
 @app.get("/search")
 def search():
     query = (request.args.get("q") or "").strip()
@@ -205,15 +213,16 @@ def search():
                 continue
             meta = item.get("metadata", {})
             track = {
-                "id": encode_track(identifier, filename),
-                "title": str(file_info.get("title") or item_title(item, result.get("title"))),
-                "artist": item_creator(item),
-                "album": str(meta.get("album") or item_title(item, result.get("title"))),
-                "format": "flac",
-                "audioQuality": "LOSSLESS",
-                "duration": item_duration(file_info, item),
-                "artworkURL": "https://archive.org/services/img/" + quote(identifier, safe=""),
-            }
+    "id": encode_track(identifier, filename),
+    "title": str(file_info.get("title") or track_title_from_filename(filename)),
+    "artist": item_creator(item),
+    "album": str(meta.get("album") or item_title(item, result.get("title"))),
+    "format": "flac",
+    "audioQuality": "LOSSLESS",
+    "duration": item_duration(file_info, item),
+    "artworkURL": "https://archive.org/services/img/" + quote(identifier, safe=""),
+}
+
             # Do not invent sample rate or bit depth. Report only explicit source metadata.
             sr = parse_int(file_info.get("sample_rate") or file_info.get("samplerate") or file_info.get("sampleRate"))
             bd = parse_int(file_info.get("bit_depth") or file_info.get("bitdepth") or file_info.get("bitDepth"))
